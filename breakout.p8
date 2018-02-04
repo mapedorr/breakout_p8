@@ -25,6 +25,8 @@ end
 
 function _update()
  local buttpress=false
+ local next_x,next_y
+ 
  if btn(c_left) then
   pad_dx=-5
   buttpress=true
@@ -40,20 +42,42 @@ function _update()
 
  pad_x+=pad_dx
  
- ball_x+=ball_dx
- ball_y+=ball_dy
+ next_x=ball_x+ball_dx
+ next_y=ball_y+ball_dy
 
 	-- handle collision with walls 
- wall_collision()
+ if next_x > 127 or next_x < 0 then
+  next_x=mid(0,next_x,127)
+  -- invert ball direction
+  ball_dx=-ball_dx
+  sfx(0)
+ end
+ if next_y > 127 or next_y < 0 then
+  next_y=mid(0,next_y,127)
+  -- invert ball direction
+  ball_dy=-ball_dy
+  sfx(0)
+ end
 
  pad_c=7
  -- check if the ball hits the padle
- if ball_box(pad_x,pad_y,pad_w,pad_h) then
-  -- todo:deal with collision
+ if ball_box(next_x,next_y,pad_x,pad_y,pad_w,pad_h) then
+  -- find direction to deflect
+  if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,pad_x,pad_y,pad_w,pad_h) then
+   -- invert ball direction in x
+   ball_dx=-ball_dx
+  else
+   -- invert ball direction in y
+   ball_dy=-ball_dy
+  end
+  -- feedback stuff
   pad_c=8
-  -- invert ball direction
-  ball_dy=-ball_dy
+  sfx(0)
  end
+ 
+ -- set the new position of the ball
+ ball_x=next_x
+ ball_y=next_y
 end
 
 function _draw()
@@ -64,19 +88,16 @@ end
 -- *-*-*-*
 -- physics
 -- *-*-*-*
--- check collisions with the walls
-function wall_collision()
- if ball_x > 127 or ball_x < 0 then
-  -- invert ball direction
-  ball_dx=-ball_dx
-  sfx(0)
- end
- if ball_y > 127 or ball_y < 0 then
-  -- invert ball direction
-  ball_dy=-ball_dy
-  sfx(0)
- end
+
+-- check collision with a box
+function ball_box(bx,by,box_x,box_y,box_w,box_h)
+ if by-ball_r>box_y+box_h then return false end
+ if by+ball_r<box_y then return false end
+ if bx-ball_r>box_x+box_w then return false end
+ if bx+ball_r<box_x then return false end 
+ return true
 end
+
 -- check collisions between the
 -- ball and a box
 function deflx_ball_box(b_x,b_y,b_dx,b_dy,t_x,t_y,t_w,t_h)
